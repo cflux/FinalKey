@@ -55,7 +55,7 @@ const char passChars[] = {
 'U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i',
 'j','k','l','m','n','o','p','q','r','s','t','u','v','w','x', //last normal as number 62 (idx 61)
 'y','z','!','"','#','$','%','&','@','?','(',')','[',']','-', // <75 (idx 75)
-'.',',','+','{','}','_','/','<','>','=','|','\'','\\', 
+'.','+','{','}','_','/','<','>','=','|','\'','\\', 
 ';',':',' ','*'// <- 92 (idx 91)
 };
 
@@ -831,6 +831,40 @@ void setBanner()
   ptxt("\r\n[abort]");
 }
 
+void fireBackup()
+{
+  cls();
+  // on button press dump everything:
+  ptxtln("[READY]");
+  uint16_t offset = 0;
+  entry_t entry;
+  char eName[32];
+  if(btnWait(BTN_TIMEOUT_FIRE))
+  {
+    Keyboard.print("Title,User,Pass");
+    Keyboard.write(10);
+    while( offset < 256 )
+    {
+      if( ES.getTitle((uint8_t)offset, eName) )
+      {
+        ptxt("[");
+        Serial.print(eName);
+        ptxt("]\r\n");
+        ES.getEntry(offset, &entry);
+        Keyboard.print(eName);
+        Keyboard.print(",");
+        Keyboard.print( entry.data );
+        Keyboard.print(",");
+        Keyboard.print( (entry.data)+entry.passwordOffset );
+        Keyboard.write(10);
+      }
+      offset++;
+    }
+    ptxtln("[BACKUP COMPLETE]");
+  }
+  Serial.write('>');
+}
+
 uint8_t page=0;
 
 void entryList(int8_t dir)
@@ -1030,7 +1064,7 @@ void changePass()
 
 void loop() {
   char cmd[4];
-  uint8_t p=0;
+  uint8_t p=0; // number of chars in current command
   uint8_t cmdType=0;
   uint8_t btnCoolDown=200;
   
@@ -1071,13 +1105,13 @@ void loop() {
     {      
       while(Serial.available())
       {
-       cmd[p]=Serial.read();
+       cmd[p]=Serial.read(); // get one char
        if( cmd[p] > 31 && cmd[p] < 127 )
        {
-         Serial.write(cmd[p]);
+         Serial.write(cmd[p]); // if a letter or number write it back to the console so the user sees it
        }
        
-       if(cmd[p]==8)
+       if(cmd[p]==8) // no idea what this is doing
        {
         Serial.write('\r');
         Serial.write(27);
@@ -1094,12 +1128,17 @@ void loop() {
          if(cmd[0]==' ')
          {
            cls();
-           ptxt("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n r  Repeat last\r\n s  Search\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n>");
+           ptxt("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n r  Repeat last\r\n s  Search\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n b plaintext backup\r\n>");
            p=0;
          } else if(cmd[0]=='u')
          {
            Serial.write('%');
            fireEntry(CMD_FIRE_USER, collectNum(), 0 );
+           p=0;
+         } else if (cmd[0]=='b')
+         {
+           // do a plaintext backup to a file on the users computer:
+           fireBackup();
            p=0;
          } else if(cmd[0]=='p')
          {
