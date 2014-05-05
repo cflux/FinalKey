@@ -1,4 +1,4 @@
-Firmware for the Final Key - A hardware password manager for Linux, Windows and OSX with encryption.
+Firmware for the Final Key - A hardware password manager for Linux, Windows and OSX with encryption. Extended by CFlux.
 --
 This software comes without any kind of warranty, and nobdy is responsible.
 Hacks are based on ARDUINO 1.5.5 BETA 2013.11.28
